@@ -1,0 +1,1103 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Intelligence | Live Monitor</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg: #090817;
+    --panel: rgba(255,255,255,0.055);
+    --border: rgba(255,255,255,0.10);
+    --text: #f4f3ff;
+    --muted: #9694b5;
+    --cyan: #37e7ff;
+    --purple: #a78bfa;
+    --pink: #ed78ff;
+    --green: #42e8a5;
+    --red: #ff668b;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background:
+        radial-gradient(ellipse at 10% 5%, rgba(115,60,220,.22), transparent 38%),
+        radial-gradient(ellipse at 90% 35%, rgba(20,170,230,.13), transparent 35%),
+        var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1600px;
+    margin: auto;
+    padding: 28px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.logo {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 15px;
+    background: linear-gradient(135deg,#7c3aed,#06b6d4);
+    font-size: 23px;
+    box-shadow: 0 0 25px rgba(80,100,255,.35);
+}
+
+.brand h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -.6px;
+}
+
+.brand p {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 5px;
+    letter-spacing: 1.5px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.live-status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: rgba(66,232,165,.08);
+    border: 1px solid rgba(66,232,165,.22);
+    padding: 10px 15px;
+    border-radius: 30px;
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.dot {
+    height: 8px;
+    width: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 12px var(--green);
+}
+
+.live-status.offline {
+    color: var(--red);
+    border-color: rgba(255,102,139,.3);
+    background: rgba(255,102,139,.08);
+}
+
+.live-status.offline .dot {
+    background: var(--red);
+    box-shadow: 0 0 12px var(--red);
+}
+
+.clock {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.section-heading {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 27px 0 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.section-heading span {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 400;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+}
+
+.glass {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: 17px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.13);
+}
+
+.stat-card {
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: .25s;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(55,231,255,.4);
+}
+
+.stat-card::after {
+    content: "";
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    right: -25px;
+    top: -30px;
+    background: var(--glow);
+    filter: blur(35px);
+    opacity: .5;
+}
+
+.stat-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.stat-icon {
+    font-size: 20px;
+}
+
+.stat-value {
+    font-size: 29px;
+    font-weight: 800;
+    margin-top: 18px;
+    letter-spacing: -.8px;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-footer {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.cyan { --glow: var(--cyan); color: var(--cyan); }
+.purple { --glow: var(--purple); color: var(--purple); }
+.green { --glow: var(--green); color: var(--green); }
+.pink { --glow: var(--pink); color: var(--pink); }
+.orange { --glow: #ffb86b; color: #ffb86b; }
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 17px;
+}
+
+.chart-card {
+    padding: 22px;
+    min-width: 0;
+}
+
+.card-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px;
+}
+
+.card-title h3 {
+    font-size: 14px;
+}
+
+.card-title p {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 6px;
+}
+
+.chart-container {
+    height: 260px;
+    position: relative;
+}
+
+.bandwidth-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.bandwidth-box {
+    padding: 16px;
+    background: rgba(255,255,255,.035);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.bandwidth-box p {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.bandwidth-box h2 {
+    font-size: 23px;
+    margin-top: 10px;
+}
+
+.bandwidth-box small {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.table-card {
+    overflow: hidden;
+}
+
+.table-toolbar {
+    padding: 19px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.table-toolbar h3 {
+    font-size: 14px;
+}
+
+.table-toolbar p {
+    color: var(--muted);
+    font-size: 10px;
+    margin-top: 5px;
+}
+
+.search {
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--border);
+    padding: 10px 13px;
+    border-radius: 9px;
+    color: white;
+    outline: none;
+    font-size: 11px;
+    width: 220px;
+}
+
+.search:focus {
+    border-color: var(--cyan);
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 760px;
+}
+
+thead {
+    background: rgba(255,255,255,.035);
+}
+
+th {
+    padding: 14px 18px;
+    text-align: left;
+    color: var(--muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    font-weight: 600;
+}
+
+td {
+    padding: 14px 18px;
+    border-top: 1px solid rgba(255,255,255,.055);
+    font-size: 11px;
+    color: #deddf0;
+}
+
+tbody tr:hover {
+    background: rgba(255,255,255,.035);
+}
+
+.protocol {
+    padding: 5px 9px;
+    border-radius: 5px;
+    font-size: 9px;
+    font-weight: 700;
+    background: rgba(167,139,250,.12);
+    color: var(--purple);
+}
+
+.protocol.UDP { color: var(--cyan); background: rgba(55,231,255,.10); }
+.protocol.ICMP { color: var(--pink); background: rgba(237,120,255,.10); }
+.protocol.OTHER { color: #ffbd74; background: rgba(255,189,116,.10); }
+
+.direction {
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.direction.incoming { color: var(--green); }
+.direction.outgoing { color: var(--cyan); }
+.direction.local { color: var(--purple); }
+
+.empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 35px;
+}
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+@media(max-width:1100px) {
+    .stats-grid {
+        grid-template-columns: repeat(3,1fr);
+    }
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media(max-width:650px) {
+    .container { padding: 15px; }
+    .brand h1 { font-size: 17px; }
+    .stats-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+    .stat-card { padding: 14px; }
+    .stat-value { font-size: 23px; }
+    .chart-card { padding: 15px; }
+    .chart-container { height: 220px; }
+    .clock { display: none; }
+    .search { width: 100%; }
+    .bandwidth-box h2 { font-size: 18px; }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+    <!-- HEADER -->
+    <header>
+        <div class="brand">
+            <div class="logo">⌘</div>
+            <div>
+                <h1>NETWORK INTELLIGENCE</h1>
+                <p>REAL-TIME TRAFFIC MONITORING SYSTEM</p>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="clock" id="clock">--:--:--</div>
+            <div class="live-status offline" id="connection">
+                <span class="dot"></span>
+                <span id="connectionText">CONNECTING</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- NETWORK STATISTICS -->
+    <div class="section-heading">
+        NETWORK STATISTICS
+        <span>Live network overview</span>
+    </div>
+
+    <div class="stats-grid">
+
+        <div class="glass stat-card cyan">
+            <div class="stat-top">
+                TOTAL PACKETS
+                <span class="stat-icon">◈</span>
+            </div>
+            <div class="stat-value" id="totalPackets">0</div>
+            <div class="stat-footer">Total captured packets</div>
+        </div>
+
+        <div class="glass stat-card green">
+            <div class="stat-top">
+                INCOMING
+                <span class="stat-icon">↓</span>
+            </div>
+            <div class="stat-value" id="incomingPackets">0</div>
+            <div class="stat-footer">Incoming packet count</div>
+        </div>
+
+        <div class="glass stat-card purple">
+            <div class="stat-top">
+                OUTGOING
+                <span class="stat-icon">↑</span>
+            </div>
+            <div class="stat-value" id="outgoingPackets">0</div>
+            <div class="stat-footer">Outgoing packet count</div>
+        </div>
+
+        <div class="glass stat-card pink">
+            <div class="stat-top">
+                LOCAL TRAFFIC
+                <span class="stat-icon">⇄</span>
+            </div>
+            <div class="stat-value" id="localPackets">0</div>
+            <div class="stat-footer">Local packet count</div>
+        </div>
+
+        <div class="glass stat-card orange">
+            <div class="stat-top">
+                TOTAL DATA
+                <span class="stat-icon">▤</span>
+            </div>
+            <div class="stat-value" id="totalData">0 B</div>
+            <div class="stat-footer">Total captured bytes</div>
+        </div>
+
+    </div>
+
+    <!-- CHARTS -->
+    <div class="section-heading">
+        TRAFFIC ANALYTICS
+        <span>Automatically updated</span>
+    </div>
+
+    <div class="charts-grid">
+
+        <!-- INCOMING / OUTGOING GRAPH -->
+        <div class="glass chart-card">
+            <div class="card-title">
+                <div>
+                    <h3>Incoming vs Outgoing Traffic</h3>
+                    <p>New packets captured per second</p>
+                </div>
+                <span style="color:var(--cyan);font-size:11px">● LIVE</span>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="trafficChart"></canvas>
+            </div>
+        </div>
+
+        <!-- PROTOCOL DISTRIBUTION -->
+        <div class="glass chart-card">
+            <div class="card-title">
+                <div>
+                    <h3>Protocol Distribution</h3>
+                    <p>Based on latest 100 packets</p>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="protocolChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BANDWIDTH -->
+    <div class="section-heading">
+        BANDWIDTH MONITORING
+        <span>Calculated from captured traffic</span>
+    </div>
+
+    <div class="glass chart-card">
+        <div class="card-title">
+            <div>
+                <h3>Network Data Transfer</h3>
+                <p>Estimated capture rate over time</p>
+            </div>
+            <span style="color:var(--green);font-size:11px">● ACTIVE</span>
+        </div>
+
+        <div class="bandwidth-grid">
+
+            <div class="bandwidth-box">
+                <p>INCOMING + OUTGOING</p>
+                <h2 id="bandwidth">0 KB/s</h2>
+                <small>Current total captured data rate</small>
+            </div>
+
+            <div class="bandwidth-box">
+                <p>DATA CAPTURED</p>
+                <h2 id="totalBytes">0 B</h2>
+                <small>Cumulative captured bytes</small>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- LIVE PACKET TABLE -->
+    <div class="section-heading">
+        LIVE PACKET MONITOR
+        <span>Latest captured network packets</span>
+    </div>
+
+    <div class="glass table-card">
+
+        <div class="table-toolbar">
+            <div>
+                <h3>Captured Packets</h3>
+                <p id="packetCount">Waiting for packets...</p>
+            </div>
+
+            <input
+                class="search"
+                type="text"
+                id="search"
+                placeholder="Search IP or protocol..."
+                oninput="renderPackets()"
+            >
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>TIME</th>
+                        <th>SOURCE IP</th>
+                        <th>DESTINATION IP</th>
+                        <th>PROTOCOL</th>
+                        <th>SIZE</th>
+                        <th>DIRECTION</th>
+                    </tr>
+                </thead>
+
+                <tbody id="packetTable">
+                    <tr>
+                        <td colspan="6" class="empty">
+                            Waiting for network packets...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="footer">
+        <span>NETWORK INTELLIGENCE MONITOR v1.0</span>
+        <span>Powered by Flask · Scapy · Psutil</span>
+        <span>Refresh interval: 1 second</span>
+    </div>
+
+</div>
+
+<script>
+
+// =======================================
+// GLOBAL VARIABLES
+// =======================================
+
+let latestPackets = [];
+
+let previousStats = null;
+let previousBytes = null;
+let previousTime = null;
+
+let trafficLabels = [];
+let incomingHistory = [];
+let outgoingHistory = [];
+let bandwidthHistory = [];
+
+const MAX_POINTS = 20;
+
+
+// =======================================
+// COMMON FUNCTIONS
+// =======================================
+
+function formatNumber(value) {
+    return Number(value || 0).toLocaleString("en-IN");
+}
+
+function formatBytes(bytes) {
+
+    bytes = Number(bytes) || 0;
+
+    if (bytes < 1024) return bytes.toFixed(0) + " B";
+
+    if (bytes < 1024 * 1024)
+        return (bytes / 1024).toFixed(2) + " KB";
+
+    if (bytes < 1024 * 1024 * 1024)
+        return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+}
+
+function formatRate(bytesPerSecond) {
+
+    if (bytesPerSecond < 1024)
+        return bytesPerSecond.toFixed(1) + " B/s";
+
+    if (bytesPerSecond < 1024 * 1024)
+        return (bytesPerSecond / 1024).toFixed(2) + " KB/s";
+
+    return (bytesPerSecond / (1024 * 1024)).toFixed(2) + " MB/s";
+}
+
+function updateClock() {
+    document.getElementById("clock").textContent =
+        new Date().toLocaleTimeString();
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+
+// =======================================
+// TRAFFIC GRAPH
+// =======================================
+
+const trafficCtx = document
+    .getElementById("trafficChart")
+    .getContext("2d");
+
+const trafficGradient1 = trafficCtx.createLinearGradient(0,0,0,260);
+trafficGradient1.addColorStop(0,"rgba(55,231,255,0.30)");
+trafficGradient1.addColorStop(1,"rgba(55,231,255,0.00)");
+
+const trafficGradient2 = trafficCtx.createLinearGradient(0,0,0,260);
+trafficGradient2.addColorStop(0,"rgba(167,139,250,0.30)");
+trafficGradient2.addColorStop(1,"rgba(167,139,250,0.00)");
+
+const trafficChart = new Chart(trafficCtx, {
+
+    type: "line",
+
+    data: {
+        labels: trafficLabels,
+
+        datasets: [
+
+            {
+                label: "Incoming",
+                data: incomingHistory,
+                borderColor: "#37e7ff",
+                backgroundColor: trafficGradient1,
+                fill: true,
+                tension: 0.4,
+                borderWidth: 2,
+                pointRadius: 2
+            },
+
+            {
+                label: "Outgoing",
+                data: outgoingHistory,
+                borderColor: "#a78bfa",
+                backgroundColor: trafficGradient2,
+                fill: true,
+                tension: 0.4,
+                borderWidth: 2,
+                pointRadius: 2
+            }
+
+        ]
+    },
+
+    options: {
+
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+
+        plugins: {
+            legend: {
+                labels: {
+                    color: "#c5c3dc",
+                    usePointStyle: true,
+                    boxWidth: 8
+                }
+            }
+        },
+
+        scales: {
+
+            x: {
+                ticks: { color: "#8886a7", maxTicksLimit: 8 },
+                grid: { color: "rgba(255,255,255,0.04)" }
+            },
+
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    color: "#8886a7",
+                    precision: 0
+                },
+                grid: { color: "rgba(255,255,255,0.06)" }
+            }
+
+        }
+    }
+});
+
+
+// =======================================
+// PROTOCOL DOUGHNUT CHART
+// =======================================
+
+const protocolChart = new Chart(
+    document.getElementById("protocolChart"),
+    {
+
+        type: "doughnut",
+
+        data: {
+            labels: ["TCP","UDP","ICMP","OTHER"],
+
+            datasets: [{
+                data: [0,0,0,0],
+
+                backgroundColor: [
+                    "#37e7ff",
+                    "#a78bfa",
+                    "#ed78ff",
+                    "#ffb86b"
+                ],
+
+                borderWidth: 0,
+                hoverOffset: 8
+            }]
+        },
+
+        options: {
+
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "70%",
+
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        color: "#c5c3dc",
+                        padding: 18,
+                        usePointStyle: true,
+                        boxWidth: 8
+                    }
+                }
+            }
+        }
+    }
+);
+
+
+// =======================================
+// UPDATE STATISTICS
+// =======================================
+
+function updateStatistics(stats) {
+
+    document.getElementById("totalPackets").textContent =
+        formatNumber(stats.total);
+
+    document.getElementById("incomingPackets").textContent =
+        formatNumber(stats.incoming);
+
+    document.getElementById("outgoingPackets").textContent =
+        formatNumber(stats.outgoing);
+
+    document.getElementById("localPackets").textContent =
+        formatNumber(stats.local);
+
+    document.getElementById("totalData").textContent =
+        formatBytes(stats.bytes);
+
+    document.getElementById("totalBytes").textContent =
+        formatBytes(stats.bytes);
+}
+
+
+// =======================================
+// UPDATE BANDWIDTH AND TRAFFIC GRAPH
+// =======================================
+
+function updateTraffic(stats) {
+
+    const now = Date.now();
+
+    let incomingRate = 0;
+    let outgoingRate = 0;
+    let totalRate = 0;
+
+    if (previousStats !== null && previousTime !== null) {
+
+        const elapsed = Math.max((now - previousTime) / 1000, 0.001);
+
+        const incomingDelta =
+            Math.max(0, Number(stats.incoming) - Number(previousStats.incoming));
+
+        const outgoingDelta =
+            Math.max(0, Number(stats.outgoing) - Number(previousStats.outgoing));
+
+        const byteDelta =
+            Math.max(0, Number(stats.bytes) - Number(previousStats.bytes));
+
+        incomingRate = incomingDelta / elapsed;
+        outgoingRate = outgoingDelta / elapsed;
+        totalRate = byteDelta / elapsed;
+    }
+
+    document.getElementById("bandwidth").textContent =
+        formatRate(totalRate);
+
+    const label = new Date().toLocaleTimeString();
+
+    trafficLabels.push(label);
+    incomingHistory.push(incomingRate);
+    outgoingHistory.push(outgoingRate);
+
+    if (trafficLabels.length > MAX_POINTS) {
+        trafficLabels.shift();
+        incomingHistory.shift();
+        outgoingHistory.shift();
+    }
+
+    trafficChart.update("none");
+
+    previousStats = {
+        incoming: Number(stats.incoming),
+        outgoing: Number(stats.outgoing),
+        bytes: Number(stats.bytes)
+    };
+
+    previousTime = now;
+}
+
+
+// =======================================
+// UPDATE PROTOCOL DISTRIBUTION
+// =======================================
+
+function updateProtocols(packets) {
+
+    const counts = {
+        TCP: 0,
+        UDP: 0,
+        ICMP: 0,
+        OTHER: 0
+    };
+
+    packets.forEach(packet => {
+
+        const protocol = String(packet.protocol || "OTHER").toUpperCase();
+
+        if (counts[protocol] !== undefined) {
+            counts[protocol]++;
+        } else {
+            counts.OTHER++;
+        }
+    });
+
+    protocolChart.data.datasets[0].data = [
+        counts.TCP,
+        counts.UDP,
+        counts.ICMP,
+        counts.OTHER
+    ];
+
+    protocolChart.update("none");
+}
+
+
+// =======================================
+// DISPLAY LIVE PACKETS
+// =======================================
+
+function renderPackets() {
+
+    const tbody = document.getElementById("packetTable");
+
+    const search = document
+        .getElementById("search")
+        .value.toLowerCase();
+
+    const filtered = latestPackets.filter(packet => {
+
+        return (
+            String(packet.source).toLowerCase().includes(search) ||
+            String(packet.destination).toLowerCase().includes(search) ||
+            String(packet.protocol).toLowerCase().includes(search) ||
+            String(packet.direction).toLowerCase().includes(search)
+        );
+
+    });
+
+    document.getElementById("packetCount").textContent =
+        "Showing " + filtered.length + " of " + latestPackets.length + " packets";
+
+    tbody.replaceChildren();
+
+    if (filtered.length === 0) {
+
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan = 6;
+        cell.className = "empty";
+        cell.textContent = "No matching packets found.";
+
+        row.appendChild(cell);
+        tbody.appendChild(row);
+
+        return;
+    }
+
+    filtered.forEach(packet => {
+
+        const row = document.createElement("tr");
+
+        const values = [
+            packet.time || "--",
+            packet.source || "--",
+            packet.destination || "--",
+            packet.protocol || "OTHER",
+            formatBytes(packet.size),
+            packet.direction || "--"
+        ];
+
+        values.forEach((value, index) => {
+
+            const cell = document.createElement("td");
+
+            if (index === 3) {
+
+                const badge = document.createElement("span");
+                badge.className = "protocol " + String(value).toUpperCase();
+                badge.textContent = value;
+                cell.appendChild(badge);
+
+            } else if (index === 5) {
+
+                const direction = document.createElement("span");
+
+                direction.className =
+                    "direction " + String(value).toLowerCase();
+
+                direction.textContent = value;
+                cell.appendChild(direction);
+
+            } else {
+
+                cell.textContent = value;
+
+            }
+
+            row.appendChild(cell);
+
+        });
+
+        tbody.appendChild(row);
+
+    });
+}
+
+
+// =======================================
+// CONNECTION STATUS
+// =======================================
+
+function setConnectionStatus(connected) {
+
+    const status = document.getElementById("connection");
+    const text = document.getElementById("connectionText");
+
+    status.classList.toggle("offline", !connected);
+
+    text.textContent = connected ? "SYSTEM ONLINE" : "API DISCONNECTED";
+}
+
+
+// =======================================
+// FETCH FLASK API
+// =======================================
+
+async function fetchNetworkData() {
+
+    try {
+
+        const response = await fetch("/api/stats", {
+            cache: "no-store"
+        });
+
+        if (!response.ok) {
+            throw new Error("API request failed");
+        }
+
+        const data = await response.json();
+
+        if (!data.stats || !Array.isArray(data.packets)) {
+            throw new Error("Invalid API response");
+        }
+
+        setConnectionStatus(true);
+
+        updateStatistics(data.stats);
+
+        updateTraffic(data.stats);
+
+        latestPackets = data.packets;
+
+        updateProtocols(latestPackets);
+
+        renderPackets();
+
+    } catch (error) {
+
+        console.error("Network monitoring error:", error);
+
+        setConnectionStatus(false);
+
+    }
+
+}
+
+
+// =======================================
+// AUTOMATIC REFRESH
+// =======================================
+
+fetchNetworkData();
+
+setInterval(fetchNetworkData, 1000);
+
+</script>
+
+</body>
+</html>
